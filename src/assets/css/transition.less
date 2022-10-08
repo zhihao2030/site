@@ -1,0 +1,60 @@
+//.slide-enter-active,
+//.slide-leave-active {
+//  transition: all 6s ease-out;
+//}
+//
+//
+//.slide-enter-to {
+//  position: absolute;
+//  right: 0;
+//}
+//
+//
+//.slide-enter-from {
+//  position: absolute;
+//  right: -100%;
+//}
+//
+//
+//.slide-leave-to {
+//  position: absolute;
+//  left: -100%;
+//}
+//
+//
+//.slide-leave-from {
+//  position: absolute;
+//  left: 0;
+//}
+.slide-enter {
+
+  transform: translateX(100%);
+  /*左边是正值相对于自己的宽度*/
+}
+
+.slide-enter-active {
+  transition: all 1s linear; //选中所有的时间为一秒
+}
+
+.slide-enter-to {
+  transform: translateX(0);
+  position: absolute;
+  top:0;            //在我们的定位之后，设置的大小会消失，那么在我们的动画过程中就进行固定大小
+  width: 100vw; //vw单位为viewpoint width 视界宽度
+}
+
+.slide-leave {
+  transform: translateX(0);
+}
+
+.slide-leave-active {
+  transition: all 1s linear;
+  position: absolute;
+  top:0;
+  width: 100vw;
+}
+
+.slide-leave-to {
+  width: 100vw;
+  transform: translateX(-100%);
+}

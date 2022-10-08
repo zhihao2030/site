@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>卡片</title>
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+        }
+        .box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .card {
+            width: 300px;
+            height: 400px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin: -200px 0 0 -150px;
+            background: white;
+            box-shadow: 0 0 17px rgb(0 0 0 / 31%);
+            text-align: center;
+            line-height: 400px;
+            font-size: 250px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-first {
+            margin-top: -230px;
+            z-index: 3;
+            transform: scale(1.1);
+        }
+        .card-second {
+            z-index: 2;
+        }
+        .card-third {
+            margin-top: -170px;
+            z-index: 1;
+            transform: scale(0.9);
+        }
+        .card-last {
+            margin-top: -140px;
+            transform: scale(0.8);
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div class="card card-first">1</div>
+    <div class="card card-second">2</div>
+    <div class="card card-third">3</div>
+</div>
+
+<script>
+    var CARD = 'card';
+    var CARD_FIRST = 'card-first';
+    var CARD_SECOND = 'card-second';
+    var CARD_THIRD = 'card-third';
+    var CARD_LAST = 'card-last';
+
+    var FRAME_PER_SECOND = 1000 / 60;
+
+    function Cards(root) {
+        this.rootElement = typeof root === 'string' ? document.querySelector(root) : root;
+        this.elements = this.rootElement.children;
+        this.maxX = (innerWidth + this.elements[0].offsetWidth) / 2;
+        this.maxY = (innerHeight + this.elements[0].offsetHeight) / 2;
+        this.isTracking = false;
+        this.startPoints = [0, 0, 0];
+        this.positions = [];
+    }
+
+    Cards.prototype.doTouchStart = function (x, y, timeStamp, target) {
+        if (this.animId) {
+            return;
+        }
+
+        this.currentElement = target;
+        if (!target.classList.contains(CARD)) {
+            return;
+        }
+
+        this.animId = null;
+        this.startPoints = [x, y, timeStamp];
+        this.isTracking = true;
+        this.positions = [];
+        this.lastPoints = [];
+    };
+
+    Cards.prototype.doTouchMove = function (x, y, time) {
+        if (!this.isTracking) {
+            return;
+        }
+
+        this.currentElement.style.transition = '';
+        var movement = [x - this.startPoints[0], y - this.startPoints[1]];
+
+        this.positions.push([...movement, time]);
+        if (this.positions.length >= 60) {
+            this.positions.splice(0, 30);
+        }
+        this.render(...movement);
+    };
+
+    Cards.prototype.doTouchEnd = function (time) {
+        if (!this.isTracking) {
+            return;
+        }
+
+        this.isTracking = false;
+
+        let endPos = this.positions.length - 1;
+        let startPos = endPos;
+        let positions = this.positions;
+        for (let i = endPos; i >= 0 && positions[i][2] > time - 100; i--) {
+            startPos = i;
+        }
+
+        if (startPos === endPos) {
+            this.currentElement.style.transition = 'all 0.3s';
+            this.render(0, 0);
+            return;
+        }
+
+        var timeOffset = time - positions[startPos][2];
+        var offsetX = positions[endPos][0] - positions[startPos][0];
+        var offsetY = positions[endPos][1] - positions[startPos][1];
+        var totalFrames = timeOffset / FRAME_PER_SECOND;
+
+        var vx = offsetX / totalFrames;
+        var vy = offsetY / totalFrames;
+
+        /**
+         * x,y轴速度都小于5则滑回原位
+         */
+        if (Math.abs(vx) < 4 && Math.abs(vy) < 4) {
+            this.currentElement.style.transition = 'all 0.3s';
+            this.render(0, 0);
+            return;
+        }
+
+        this.lastPoints = positions[endPos];
+        this.startAnimation(vx, vy);
+    };
+
+    Cards.prototype.render = function (x, y) {
+        this.currentElement.style.transform = `translate3d(${x}px,${y}px,0) scale(1.1)`;
+    };
+
+    Cards.prototype.startAnimation = function (vx, vy) {
+        var self = this;
+        var run = function () {
+            // 加速滑出
+            vx *= 1.2;
+            vy *= 1.2;
+
+            self.lastPoints = [self.lastPoints[0] + vx, self.lastPoints[1] + vy];
+            self.render(...self.lastPoints);
+
+            /**
+             * 检查超出边界则停止动画
+             */
+            if (!self.isOut()) {
+                self.animId = requestAnimationFrame(run);
+            } else {
+                self.animId = null;
+            }
+        };
+        self.animId = requestAnimationFrame(run);
+    };
+
+    Cards.prototype.isOut = function () {
+        if (Math.abs(this.lastPoints[0]) > this.maxX || Math.abs(this.lastPoints[1]) > this.maxY) {
+            this.resort();
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * 重新排列卡片
+     */
+    Cards.prototype.resort = function () {
+        var self = this;
+        var first = document.querySelector(`.${CARD_FIRST}`);
+        var second = document.querySelector(`.${CARD_SECOND}`);
+        var third = document.querySelector(`.${CARD_THIRD}`);
+
+        first.style.transform = '';
+        first.style.opacity = 0;
+        self.chageclass(first, CARD_LAST);
+
+        requestAnimationFrame(function () {
+            first.style.transition = 'all 0.3s';
+            second.style.transition = 'all 0.3s';
+            third.style.transition = 'all 0.3s';
+
+            first.style.opacity = 1;
+
+            self.chageclass(first, CARD_THIRD);
+            self.chageclass(second, CARD_FIRST);
+            self.chageclass(third, CARD_SECOND);
+        });
+    };
+
+    Cards.prototype.chageclass = function (e, c) {
+        e.classList.remove(CARD_FIRST);
+        e.classList.remove(CARD_SECOND);
+        e.classList.remove(CARD_THIRD);
+        e.classList.remove(CARD_LAST);
+        e.classList.add(c);
+    };
+
+    var container = document.querySelector('.box');
+
+    var cards = new Cards(container);
+
+    if ('ontouchstart' in window) {
+        container.addEventListener('touchstart', function (event) {
+            event.preventDefault();
+            var touch = event.touches[0];
+            cards.doTouchStart(touch.pageX, touch.pageY, event.timeStamp, event.target);
+        });
+
+        document.addEventListener('touchmove', function (event) {
+            var touch = event.touches[0];
+            cards.doTouchMove(touch.pageX, touch.pageY, event.timeStamp);
+        });
+
+        document.addEventListener('touchend', function (event) {
+            event.preventDefault();
+            cards.doTouchEnd(event.timeStamp);
+        });
+    } else {
+        container.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+            cards.doTouchStart(event.pageX, event.pageY, event.timeStamp, event.target);
+        });
+
+        document.addEventListener('mousemove', function (event) {
+            event.preventDefault();
+            cards.doTouchMove(event.pageX, event.pageY, event.timeStamp);
+        });
+
+        document.addEventListener('mouseup', function (event) {
+            event.preventDefault();
+            cards.doTouchEnd(event.timeStamp);
+        });
+    }
+</script>
+</body>
+</html>

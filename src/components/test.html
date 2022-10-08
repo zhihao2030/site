@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/http-vue-loader"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="app">
+        <el-select v-model="value" filterable placeholder="请选择"  :filter-method="filterFn">
+            <el-option
+                    v-for="item in filterOptions"
+                    :key="item.value"
+                    :label="item.value + '--' + item.label"
+                    :value="item.value">
+            </el-option>
+        </el-select>
+    </div>
+
+<script>
+    Vue.use(httpVueLoader);
+    const app = new Vue({
+        el: '#app',
+        data: {
+            filterOptions: [],
+            options: [{
+                value: '选项1',
+                label: '黄金糕'
+            }, {
+                value: '选项2',
+                label: '双皮奶'
+            }, {
+                value: '选项3',
+                label: '蚵仔煎'
+            }, {
+                value: '选项4',
+                label: '龙须面'
+            }, {
+                value: '选项5',
+                label: '北京烤鸭'
+            }],
+            value: ''
+        },
+        methods: {
+            filterFn(v) {
+                if (!v) {
+                    this.filterOptions = this.options
+                    return
+                }
+                this.filterOptions = this.options.filter(item=> (item.value.includes(v) || item.label.includes(v)))
+            }
+        },
+        created() {
+            // 给初始值
+            this.filterOptions = this.options
+        }
+    })
+</script>
+</body>
+</html>
